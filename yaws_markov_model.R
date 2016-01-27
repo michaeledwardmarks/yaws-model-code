@@ -236,17 +236,6 @@ init <- c(S        = 10736,
 start <- nrow(param_grid) %/% slices * (slice_nb - 1) + 1
 if (slice_nb == slices)
 {
-    random_plist <- maximinLHS(n = nb_runs, k = 5)
-    colnames(random_plist) <- names(random_params)
-    plist <- sapply(names(random_params), function(name)
-    {
-        random_params[[name]][["min"]] +
-            random_plist[, name] *
-                (random_params[[name]][["max"]] - random_params[[name]][["min"]])
-    })
-    colnames(plist) <- names(random_params)
-    simulationlist_sto[[i]] <- list()
-    cat("Exploring parameter set", i, "at", format(Sys.time()), "\n")
     end <- nrow(param_grid)
 } else {
     end <- nrow(param_grid) %/% slices * slice_nb
@@ -256,21 +245,40 @@ cat("Starting to explore parameter sets", start, "to", end, "\n")
 
 for (i in start:end)
 {
+    filename <- paste0("sims_", sprintf("%02d", treat_freq), "m_", sprintf("%02d", run_nb), "_", sprintf("%04d", i), ".rds")
+    if (file.exists(filename))
     {
-        #run multiple simulations
-        simulationlist_sto[[i]][[j]] <- list()
-        simulationlist_sto[[i]][[j]][["params"]] <- c(unlist(param_grid[i, ]), plist[j,])
-        simulationlist_sto[[i]][[j]][["trajectory"]] <-
-            data.table(stoSI1I2L(y = init,
-                                    parms = simulationlist_sto[[i]][[j]][["params"]],
-                                    times = dt,
-                                    events = list(func = dispatch,
-                                    time = allevents)))
-        #discard burn-in
-        simulationlist_sto[[i]][[j]][["trajectory"]] <-
-            simulationlist_sto[[i]][[j]][["trajectory"]][time >= 0]
+        cat("Skipping parameter set", i, "at", format(Sys.time()), "\n")
+    } else
+    {
+        cat("Exploring parameter set", i, "at", format(Sys.time()), "\n")
+
+        random_plist <- maximinLHS(n = nb_runs, k = 5)
+        colnames(random_plist) <- names(random_params)
+        plist <- sapply(names(random_params), function(name)
+        {
+            random_params[[name]][["min"]] +
+                random_plist[, name] *
+                    (random_params[[name]][["max"]] - random_params[[name]][["min"]])
+        })
+        colnames(plist) <- names(random_params)
+        simulationlist_sto <- list()
+        for (j in 1:nrow(plist))
+        {
+                                        #run multiple simulations
+            simulationlist_sto[[j]] <- list()
+            simulationlist_sto[[j]][["params"]] <- c(unlist(param_grid[i, ]), plist[j,])
+            simulationlist_sto[[j]][["trajectory"]] <-
+                data.table(stoSI1I2L(y = init,
+                                     parms = simulationlist_sto[[j]][["params"]],
+                                     times = dt,
+                                     events = list(func = dispatch,
+                                                   time = allevents)))
+                                        #discard burn-in
+            simulationlist_sto[[j]][["trajectory"]] <-
+                simulationlist_sto[[j]][["trajectory"]][time >= 0]
+        }
+        saveRDS(simulationlist_sto, filename)
     }
 })
-
-saveRDS(simulationlist_sto, paste0("sims_", run_nb, ".rds"))
-
+cat("done")

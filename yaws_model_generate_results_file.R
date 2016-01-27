@@ -1,6 +1,11 @@
 library(data.table)
 
 # get list of files in data directory
+if (Sys.info()[["user"]] == "seb") {
+    data_dir <- path.expand("~/Data/Yaws/") # Seb
+} else {
+    data_dir <- path.expand("~/Documents/Modelling Data/") # Michael
+}
 
 files <- list.files(path.expand("/"), pattern = ".*\\.rds", full.names = TRUE)
 

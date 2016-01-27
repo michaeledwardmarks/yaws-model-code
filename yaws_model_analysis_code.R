@@ -1,6 +1,12 @@
 library('data.table')
 
-res <- readRDS("/Users/Michael/Documents/Modelling Data/yaws_res.rds")
+if (Sys.info()[["user"]] == "seb") {
+    data_dir <- path.expand("~/Data/Yaws/") # Seb
+} else {
+    data_dir <- path.expand("~/Documents/Modelling Data/") # Michael
+}
+
+res <- readRDS(paste(data_dir, "yaws_res.rds", sep = "/"))
 
 ##Cut the data based on MDA parameters but not estimates of Beta##
   

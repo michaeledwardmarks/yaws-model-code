@@ -31,6 +31,9 @@ maxtime <- 150
 # number of runs per parameter combination
 nb_runs <- 1000
 
+## treatment frequency (in months)
+treat_freq <- 12
+
 #function to run a Stochastic Simulation
 stoSI1I2L <- function(y, parms, times, events)
 {
@@ -178,8 +181,11 @@ simulationlist_sto <- list()
 run_nb <- (sim_nb - 1) %% 18
 slice_nb <- (sim_nb - 1) %/% 18 + 1
 
-etimes1 <- seq(from = 12, by = 6, length.out = nb_events1)
-etimes2 <- seq(from = max(etimes1) + 6, by = 6, length.out = nb_events2)
+nb_events1 <- run_nb  %/% 6 + 1
+nb_events2 <- run_nb %% 6
+
+etimes1 <- seq(from = 12, by = treat_freq, length.out = nb_events1)
+etimes2 <- seq(from = max(etimes1) + 6, by = treat_freq, length.out = nb_events2)
 
 allevents <- sort(unique(c(etimes1,etimes2)))
 

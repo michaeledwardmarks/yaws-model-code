@@ -13,10 +13,13 @@ enableJIT(1)
 args <- commandArgs(trailingOnly = TRUE)
 filename <- "yaws_runs"
 
+## number of parameter slices
+slices <- 5
+
 if (length(args) > 0) {
-    run_nb <- as.integer(args[1])
+    sim_nb <- as.integer(args[1])
 } else {
-    run_nb <- 1
+    sim_nb <- 1
 }
 
 # number of months to use for burn-in
@@ -172,8 +175,8 @@ simulationlist_sto <- list()
 
 #MDA Timings
 
-nb_events1 <- (run_nb - 1) %/% 6 + 1
-nb_events2 <- (run_nb - 1) %% 6
+run_nb <- (sim_nb - 1) %% 18
+slice_nb <- (sim_nb - 1) %/% 18 + 1
 
 etimes1 <- seq(from = 12, by = 6, length.out = nb_events1)
 etimes2 <- seq(from = max(etimes1) + 6, by = 6, length.out = nb_events2)
@@ -224,7 +227,8 @@ init <- c(S        = 10736,
           I2       = 180,
           L        = 4996)
 
-system.time(for (i in 1:nrow(param_grid))
+start <- nrow(param_grid) %/% slices * (slice_nb - 1) + 1
+if (slice_nb == slices)
 {
     random_plist <- maximinLHS(n = nb_runs, k = 5)
     colnames(random_plist) <- names(random_params)
@@ -237,8 +241,15 @@ system.time(for (i in 1:nrow(param_grid))
     colnames(plist) <- names(random_params)
     simulationlist_sto[[i]] <- list()
     cat("Exploring parameter set", i, "at", format(Sys.time()), "\n")
+    end <- nrow(param_grid)
+} else {
+    end <- nrow(param_grid) %/% slices * slice_nb
+}
 
-    for (j in 1:nrow(plist))
+cat("Starting to explore parameter sets", start, "to", end, "\n")
+
+for (i in start:end)
+{
     {
         #run multiple simulations
         simulationlist_sto[[i]][[j]] <- list()

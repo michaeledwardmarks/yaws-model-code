@@ -22,3 +22,18 @@ extinctions2 <- res[, list(proportion.extinct = round(sum(extinct) / .N * 100)),
 extinctions2[, extinct.groups := cut(proportion.extinct, seq(0, 100, 25), include.lowest = TRUE)]
 
 setnames(extinctions2,c("Rounds of TTT","Rounds of TCT"),c("ttt_rounds","tct_rounds"))
+
+## calculate R0
+N <-sum(c(S = 10736, I1 = 180, I2 = 180, L = 4996))
+
+
+dt[, R0 := Beta * N * (relapse + latenttreat) /
+       ((latent + treat) * latenttreat + relapse * treat)]
+dt[, mean(R0)]
+## [1] 1.954078
+
+dt[, quantile(R0, c(0.025, 0.5, 0.975))]
+##     2.5%      50%    97.5% 
+## 1.078005 1.879248 3.324015 
+
+

@@ -1,0 +1,3 @@
+T:matrix([beta*N,beta*N,0],[0,0,0],[0,0,0]);
+C:matrix([-alpha-eta-tau_I,0,0],[alpha,-eta-tau_I,rho],[eta,eta,-tau_L-rho]);
+eigenvalues(-T.invert(C));

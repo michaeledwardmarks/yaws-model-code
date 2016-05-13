@@ -1,7 +1,7 @@
 library('data.table')
 
 if (Sys.info()[["user"]] == "seb") {
-    data_dir <- path.expand("~/Data/Yaws/") # Seb
+    data_dir <- path.expand("~/Data/Yaws/12MonthFreq") # Seb
 } else {
     data_dir <- path.expand("~/Documents/Modelling Data/") # Michael
 }
@@ -22,3 +22,55 @@ extinctions2 <- res[, list(proportion.extinct = round(sum(extinct) / .N * 100)),
 extinctions2[, extinct.groups := cut(proportion.extinct, seq(0, 100, 25), include.lowest = TRUE)]
 
 setnames(extinctions2,c("Rounds of TTT","Rounds of TCT"),c("ttt_rounds","tct_rounds"))
+
+## calculate R0
+N <-sum(c(S = 10736, I1 = 180, I2 = 180, L = 4996))
+
+dt <- data.table(res)
+dt[, R0 := Beta * N * (relapse + latenttreat) /
+       ((latent + treat) * latenttreat + relapse * treat)]
+dt[, mean(R0)]
+## [1] 1.954078
+
+dt[, quantile(R0, c(0.025, 0.5, 0.975))]
+##     2.5%      50%    97.5% 
+## 1.078005 1.879248 3.324015 
+
+## define transmission scenarios in terms of Beta
+## Beta_values <- unique(dt[, Beta])
+
+## dt[Beta == Beta_values[1], transmission_scenario := "low"]
+## dt[Beta == Beta_values[2], transmission_scenario := "medium"]
+## dt[Beta == Beta_values[3], transmission_scenario := "high"]
+
+## dt[, list(mean = mean(R0),
+##           min.95 = quantile(R0, 0.025),
+##           max.95 = quantile(R0, 0.975)), by = transmission_scenario]
+
+##    transmission_scenario     mean   min.95   max.95
+## 1:                   low 1.434656 1.010635 2.137247
+## 2:                medium 1.954074 1.376659 2.911574
+## 3:                  high 2.473504 1.742236 3.685420
+
+######### define transmission scenarios in terms of R0
+
+## exclude R0 values <= 1 (123226 in total)
+dt <- dt[R0 > 1]
+
+## determine low, mid, high third of R0 values
+R0_quantiles <- quantile(dt[, R0], seq(0, 1, 1/3))
+ ##      0% 33.33333% 66.66667%      100% 
+ ## 1.000001  1.635413  2.148715  5.026966 
+
+## split data into low, mid, high according to these quantiles
+dt[, R0_quantile := cut(R0, R0_quantiles, include.lowest = TRUE)]
+
+dt[, transmission_scenario :=
+       factor(R0_quantile, labels = c("low", "medium", "high"))]
+##Cut the data based on MDA parameters and defined transmission scenarios
+extinctions3 <- dt[, list(proportion.extinct = round(sum(extinct) / .N * 100)), by = c("tct1", "ttt1", "ttt2", "Rounds of TCT", "Rounds of TTT", "transmission_scenario")]
+
+extinctions3[, extinct.groups := cut(proportion.extinct, seq(0, 100, 25), include.lowest = TRUE)]
+
+setnames(extinctions3,c("Rounds of TTT","Rounds of TCT"),c("ttt_rounds","tct_rounds"))
+

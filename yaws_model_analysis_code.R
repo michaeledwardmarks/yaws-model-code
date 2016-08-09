@@ -74,3 +74,47 @@ extinctions3[, extinct.groups := cut(proportion.extinct, seq(0, 100, 25), includ
 
 setnames(extinctions3,c("Rounds of TTT","Rounds of TCT"),c("ttt_rounds","tct_rounds"))
 
+library('ppcor')
+
+## reorder columns
+res <- res[, list(Beta, second, latent, relapse, treat, latenttreat, tct1, ttt1, ttt2, `Rounds of TCT`, `Rounds of TTT`, extinct)]
+## calculate PRCC
+corr <- pcor(res, method = "spearman")
+## create data frame for easier plotting
+prcc <- data.table(parameter = colnames(corr$estimate),
+                   PRCC = corr$estimate[, "extinct"])
+## remove self-correlation
+prcc <- prcc[parameter != "extinct"]
+prcc[, parameter := factor(parameter, levels = prcc$parameter)]
+
+library('ggplot2')
+library('cowplot')
+
+p <- ggplot(prcc[parameter %in% c("Beta", "second", "latent", "relapse", "treat", "latenttreat")], 
+            aes(x = parameter, y = PRCC)) +
+  geom_bar(stat = "identity") +
+  scale_x_discrete("", labels = c('Beta' = expression(beta),
+                                  'latent' = expression(eta), 
+                                  'latenttreat' = expression(tau[L]),
+                                  'relapse' = expression(rho),
+                                  'second' = expression(alpha),
+                                  'treat' = expression(tau[I]),
+                                  'tct1' = "TCT coverage",
+                                  'ttt1' = "TTT coverage of active cases",
+                                  'ttt2' = "TTT coverage of latent cases")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("prcc_disease_parameters.pdf", p)
+
+p <- ggplot(prcc, aes(x = parameter, y = PRCC)) +
+  geom_bar(stat = "identity") +
+  scale_x_discrete("", labels = c('Beta' = expression(beta),
+                                  'latent' = expression(eta), 
+                                  'latenttreat' = expression(tau[L]),
+                                  'relapse' = expression(rho),
+                                  'second' = expression(alpha),
+                                  'treat' = expression(tau[I]),
+                                  'tct1' = "TCT coverage",
+                                  'ttt1' = "TTT coverage of active cases",
+                                  'ttt2' = "TTT coverage of latent cases")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("prcc_all_parameters.pdf", p)
